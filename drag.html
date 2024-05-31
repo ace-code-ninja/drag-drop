@@ -1,0 +1,168 @@
+<html>
+
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.19/dist/interact.min.js"></script>
+
+
+  <link href="https://cdn.jsdelivr.net/npm/interactjs@1.10.19/dist/api/styles/jsdoc-default.min.css" rel="stylesheet">
+
+  <style>
+    .fieldItem {
+      width: 120px;
+      height: 30px;
+      margin: 1rem 0 0 1rem;
+      background-color: #29e;
+      color: white;
+      border-radius: 0.75em;
+      padding: 2px;
+      touch-action: none;
+      user-select: none;
+      z-index: 1;
+      touch-action: none;
+  user-select: none;
+    }
+
+    .sidebar {
+      position: absolute;
+      width: 200px;
+      height: 100%;
+      left: 0;
+      top: 0;
+      /*z-index: 100;*/
+    }
+
+
+
+    .droppable {
+      margin: 5px;
+      height: 400px;
+      width: 800px;
+      background: #f0f0f0;
+      position: relative;
+    }
+
+    .editor_area {
+      display: inline-block;
+      width: calc(100% - 485px);
+      height: calc(100vh - 85px);
+      text-align: center;
+      overflow-y: scroll;
+      position: relative;
+      margin: 12px;
+      margin-top: 0px;
+    }
+
+    .editor_fields {
+      display: inline-block;
+      width: 220px;
+      height: calc(100vh - 73px);
+      overflow-y: auto;
+      background-color: white;
+    }
+
+    .editor {
+      height: 100%;
+      width: 100%;
+      margin: 0px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .container-fluid {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    #hover {
+      position:absolute;
+      outline:dotted 1px #000;
+      z-index:2000;
+      pointer-events:none;
+      display:none;
+    }
+
+    #hover.visible {
+      display:block;
+    }
+    
+    #hover .add {
+      border:solid 1px #c0c0c0;
+      background:none;
+      width:16px;
+      height:16px;
+      line-height:16px;
+      padding:0;
+      position:absolute;
+      left:50%;
+      bottom:0;
+      transform:translate(-50%, 100%);
+      pointer-events:all;
+    }
+  </style>
+
+
+</head>
+
+
+
+<body>
+
+  <div style="width:100%; display:flex; ">
+    <select id="envelope_size_label" data-selected-scale-size="1.0" style=" width: 120px; margin: auto;">
+      <option value="0.50">50</option>
+      <option value="1" selected>100</option>
+      <option value="1.25">125</option>
+      <option value="1.50">150</option>
+      <option value="2">200</option>
+      <option value="2.5">250</option>
+      <option value="3">300</option>
+    </select>
+  </div>
+  <div class="container-fluid">
+    <div class="editor">
+      <div class="editor_fields">
+        <div class="">
+          <div class="fieldItem"> Name </div>
+          <div class="fieldItem"> Title </div>
+          <div class="fieldItem radio"> <input type="radio" name="radio"> </div>
+        </div>
+      </div>
+
+      <div class="editor_area" id="editor_area">
+        <div id="envelope" data-standard-size="780" style="transform: scale(1.0); transform-origin: center top; width:780px; margin:auto;">
+          <div id="page1" class="droppable ui-droppable ui-selectable">
+            <h2>Page 1</h2>
+          </div>
+          <div id="page2" class="droppable ui-droppable ui-selectable">
+            <h2>Page 2</h2>
+          </div>
+          <div id="page3" class="droppable ui-droppable ui-selectable">
+            <h2>Page 3</h2>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div id="hover"><button class="add">+</button></div>
+
+
+
+
+  <script>
+
+
+
+
+  </script>
+
+  <script src="./draddrop.js"></script>
+
+</body>
+
+
+
+
+
+
+</html>

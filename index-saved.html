@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en"><head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>jQuery UI Droppable Demo</title>
+		<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+		<style>
+			* {
+				box-sizing:border-box;
+			}
+			body {
+				padding:0;
+				margin:0;
+				width:100vw;
+				height:100vh;
+			}
+			h2 {
+				margin:0;
+				padding:5px;
+			}
+			.builder {
+				position:absolute;
+				left:0;
+				top:0;
+				width:100%;
+				height:100%;
+				padding-left:200px;
+			}
+			.sticky {
+				position:sticky;
+				top:5px;
+			}
+			.sidebar {
+				position:absolute;
+				width:200px;
+				height:100%;
+				left:0;
+				top:0;
+				z-index:100;
+			}
+			.scroll {
+				height:100%;
+				width:100%;
+				overflow-x:visible;
+				overflow-y:scroll;
+			}
+			.draggable { 
+				background:orange;
+				width:120px;
+				padding:5px;
+				z-index:110;
+				margin:0;
+			}
+			.sidebar .draggable {
+				margin:5px;
+			}
+			.droppable { 
+				margin:5px;
+				height: 400px; 
+				background:#f0f0f0;
+				position:relative;
+			}
+			.droppable.ui-droppable-hover h2 {
+				color:#ff0000;
+			}
+			.droppable .draggable {
+				position:absolute;
+				margin:0;
+				width:20%;
+				height:20%;
+			}
+
+			.ui-selecting {
+				background: #ccc !important;
+			}
+			.ui-selected {
+				background: #999 !important;
+			}
+			
+			.mover {
+				position:absolute;
+				left:0;
+				top:0;
+				width:0;
+				height:0;
+				z-index:1000;
+				/*outline:solid 1px #c0c0c0;*/
+			}
+			.mover .draggable {
+				position:absolute;
+				margin:0;
+			}
+			
+			.radio {
+				position:relative;
+				background:orange;
+				width:29px;
+				height:29px;
+				display:flex;
+				justify-content:center;
+				align-items:center;
+			}
+			.radio input {
+				margin:0;
+			}
+			.sidebar input {
+				pointer-events:none;
+			}
+			.sidebar .radio {
+				width:120px;
+			}
+			#hover {
+				position:absolute;
+				outline:dotted 1px #000;
+				z-index:2000;
+				pointer-events:none;
+				display:none;
+			}
+			#hover.visible {
+				display:block;
+			}
+			#hover .add {
+				border:solid 1px #c0c0c0;
+				background:none;
+				width:16px;
+				height:16px;
+				line-height:16px;
+				padding:0;
+				position:absolute;
+				left:50%;
+				bottom:0;
+				transform:translate(-50%, 100%);
+				pointer-events:all;
+			}			
+		</style>
+		<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+		<script>
+			$(function() {
+				//Adds a basic draggable functionality to sidebar elements
+				$( ".sidebar .draggable" ).draggable({
+					helper: "clone",
+					containment: "document",
+					cursor: "move",
+					revert: "invalid"
+				});
+
+				//Adds a basic draggable functionality to saved elements
+				$( ".droppable .draggable" ).draggable({
+					cursor: "move",
+					revert: "invalid"
+				});
+
+				//Hover is that dotted frame around radio element groups with [+] button in the bottom
+				var hover = $('<div id="hover"><button class="add">+</button></div>').appendTo($('body'));
+				
+				//Class this every time when hover position or bounds can change - i.e. on radio elements move and scroll
+				function updateHoverBounds() {
+					var rect = {
+						left:10000,
+						top:10000,
+						right:0,
+						bottom:0
+					};
+
+					//Define the bounds of all elements inside the hover frame - i.e. minimal left and top and maximal right and bottom
+					$('input[name="' + hover.data('name') + '"]').each(function() {
+						var el = $(this).parent();
+						var offset = el.offset();
+						rect = {
+							left:Math.min(rect.left, offset.left),
+							top:Math.min(rect.top, offset.top),
+							right:Math.max(rect.right, offset.left + el.outerWidth()),
+							bottom:Math.max(rect.bottom, offset.top + el.outerHeight())
+						};
+					});
+					
+					//Apply calculated bounds to the hover
+					hover.css({
+						left:rect.left,
+						top:rect.top,
+						width:rect.right - rect.left,
+						height:rect.bottom - rect.top
+					});
+				}
+				
+				//Update hover bounds on radio elements drag
+				$(document).on("drag", function( event, ui ) {
+					if(hover.hasClass('visible')) updateHoverBounds();
+				});
+				
+				//Update hover bounds after radio elements drag
+				$(document).on("dragstop", function( event, ui ) {
+					if(hover.hasClass('visible')) updateHoverBounds();
+				});
+				
+				//Update hover bounds on scroll - required because hover is attached to the document body, but scroll happens inside the div.scroll 
+				$('.scroll').on("scroll", function( event, ui ) {
+					if(hover.hasClass('visible')) updateHoverBounds();
+				});
+				
+
+				//Update hover bounds on resize - required because elements now have position in % of parent size
+				var resizeObserver = new ResizeObserver(function(entries) {
+					if(hover.hasClass('visible')) updateHoverBounds();
+				});			
+				$('.droppable').each(function() {
+					resizeObserver.observe(this);
+				});
+				
+				//Add button click handler - created a new radio element in the same group
+				$(document).on('click', '#hover .add', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					
+					//Find the last radio element in the group
+					var radio = $('input[name="' + hover.data('name') + '"]:last').parent();
+					
+					//Clone it and append to the same parent
+					var el = radio.clone().appendTo(radio.parent());
+					
+					//Make it draggable
+					el.draggable({
+						cursor: "move",
+						revert: "invalid"
+					});
+
+					//Change the newly created radio element's positon moving it below the last element in the group
+					var position = radio.position();
+					el.css({
+						top:(position.top  + radio.outerHeight(true) + 5) / radio.parent().height() * 100 + '%',
+						left:position.left / radio.parent().width() * 100 + '%'
+					});
+					
+					//We added a new element so have to update the hover bounds
+					updateHoverBounds();
+				});
+				
+				//Event handler that toggles the visibility of hover on radio element's click
+				$(document).on('click', '.droppable .radio', function(e) {
+					//Check if radio element was exactly clicked - necessary to filter click on the radio input itself
+					if($(e.target).hasClass('draggable')) {
+						//Find a name of the radio elements group to check if it is the current group for hover
+						var name = $(this).find('input').attr('name');
+						console.log('12312312312312312312312312312123', hover.data('name'))
+						
+						if(name == hover.data('name')) {
+							//Toggle visibility if group is the same
+							hover.toggleClass('visible');
+						} else {
+							//Save new group name in hover's data and show it if group was changed						
+							hover.data('name', name);
+							hover.addClass('visible');
+						}
+						
+						//Update hover bounds to the actual group's one
+						updateHoverBounds();
+					}					
+				});
+				
+				//Helper function to move draggable element to the page
+				function moveToParent(el, parent, offset) {
+					//Sometimes we need to place draggable in the position of other element (if helper is used)
+					if(!offset) offset = el.offset();
+
+					//Find position of the page - this is necessary because draggable has position relative to parent, so if parent changes we have to calculate the new position
+					var parentOffset = parent.offset();
+					
+					//Attached draggable to the new page
+					el.appendTo(parent);
+					
+					//Calculate new positon of draggable that is relative to the new parent and correct it the way draggable is inside the new parent
+					el.css({
+						left: (Math.min(Math.max(0, offset.left - parentOffset.left), parent.width() - el.outerWidth()) / parent.width() * 100) + '%',
+						top: (Math.min(Math.max(0, offset.top - parentOffset.top), parent.height() - el.outerHeight()) / parent.height() * 100) + '%'
+					});
+				}
+				
+				//Add droppable functionality to the page
+				$( ".droppable" ).droppable({
+					//This handler is called then we drop the draggable to a page
+					drop: function( event, ui ) {
+						var parent = $(this);
+						
+						if(ui.draggable.hasClass('mover')) {
+							//Check if that draggable is mover - if so move all its draggable elements to the pages and remove the mover
+							removeMover();
+						} else if(ui.draggable.parent().hasClass('droppable')) {
+							//If we just moved draggable element just attach it to the page and set the proper position to it
+							moveToParent(ui.draggable, parent);
+						} else {
+							//This branch if for a case where we create a new draggable element using sidebar's ones
+							var el = ui.draggable.clone();
+							
+							//Make the new element selectable
+							el.addClass('selectable');
+							
+							//Attach it to the page
+							moveToParent(el, parent, ui.helper.offset());
+							
+							//Make ir draggable
+							el.draggable({
+								cursor: "move",
+								revert: "invalid"
+							});
+							 
+							//If this is a radio element we should set a unique name to it so we can group those radio elements 
+							if(el.hasClass('radio')) {
+								//Name is generated using the rime we added the element so it is unique
+								el.find('input[type="radio"]').attr('name', 'r' + new Date().getTime());
+							}
+						}
+					}
+				});
+				
+				//Mover is the element that allows to drag selected draggables together - we add these draggables to it
+				//This function is called when we need to update mover bounds 
+				function updateMoverBounds(mover) {
+					var rect = {
+						left:10000,
+						top:10000,
+						right:0,
+						bottom:0
+					};
+											
+					//Define mover bounds accounting all draggable elements inside it
+					mover.find('.draggable').each(function() {
+						var el = $(this);
+						var offset = el.offset();
+						rect = {
+							left:Math.min(rect.left, offset.left),
+							top:Math.min(rect.top, offset.top),
+							right:Math.max(rect.right, offset.left + el.outerWidth()),
+							bottom:Math.max(rect.bottom, offset.top + el.outerHeight())
+						};
+					});
+					
+					//Update draggable positions relative to the new bounds
+					mover.find('.draggable').each(function() {
+						var el = $(this);
+						var offset = el.offset();
+						el.css({
+							left: offset.left - rect.left,
+							top: offset.top - rect.top
+						});
+					});
+
+					//Apply new bounds to the mover
+					mover.css({
+						left: rect.left,
+						top: rect.top,
+						width: rect.right - rect.left,
+						height: rect.bottom - rect.top
+					});
+				}
+				
+				//Just a singleton function to get the mover
+				function createMover() {
+					//Try to find mover
+					var mover = $('#mover');
+					
+					if(!mover.length) {
+						//If it is not found = create it
+						mover = $('<div id="mover" class="mover"></div>').appendTo($('body'));
+						//And move draggable
+						mover.draggable({
+							cursor: "move",
+							revert: "invalid"
+						});
+					}
+					
+					return mover;
+				}
+				
+				//Function to find a page that lays below the draggable
+				function findParent(el) {
+					var parent = null;
+					
+					//Get draggable bonds
+					var elRect = el.get(0).getBoundingClientRect();
+					$('.droppable').each(function() {
+						//Get page bonds
+						var parentRect = this.getBoundingClientRect();
+						
+						//Check if draggable bounds are outside the page bounds - if so return
+						if(elRect.right < parentRect.left || elRect.bottom < parentRect.top || elRect.left > parentRect.right || elRect.top > parentRect.bottom) return;
+						
+						//Page found - store the parent
+						parent = $(this);
+					});
+					
+					//And return the page we found
+					return parent;
+				}
+				
+				//Singleton remove function
+				function removeMover() {
+					//Find mover
+					var mover = $('#mover');
+					
+					//If no mover found - return
+					if(!mover.length) return;
+
+					//If found - place all draggables from the mover to actual pages
+					mover.find('.draggable').each(function() {
+						var el = $(this);
+						
+						//Remove selected class
+						el.removeClass('ui-selected');
+
+						//Removing saved w / h
+						el.css('width', '');
+						el.css('height', '');
+						
+						//Find proper page and attached draggable to it
+						moveToParent(el, findParent(el));
+						
+						//Enable draggable functionality
+						el.draggable( "enable" );
+					});
+					
+					//Destroy the mover
+					mover.remove();
+				}
+				
+				
+				//A flag to indicate that a new element was selected by user
+				var newSelected = false;
+				
+				//Make draggable elements selectable by user
+				$(".droppable").selectable({
+					//Select only elements that have selectable class ignoring others like page titles and so on
+					filter:".selectable", 
+					
+					//If new lement was selected
+					selected: function( event, ui ) {
+						//Set the flag to indicate this
+						newSelected = true;
+						
+						//Get the mover
+						var mover = createMover();
+						
+						//Get the mover position
+						var moverOffset = mover.offset();
+						
+						//Get the element that was selected
+						var el = $(ui.selected);
+						
+						//Gets its offset
+						var offset = el.offset();
+						
+						//Disable draggable functionality to avoid draggin them inside the mover
+						el.draggable( "disable" );
+						
+						//Saving w/h
+						el.css({
+							width:el.outerWidth(),
+							height:el.outerHeight()
+						});
+						
+						//Append element to mover
+						el.appendTo(mover);
+						
+						//Set its position relatived to mover
+						el.css({
+							left: offset.left - moverOffset.left,
+							top: offset.top - moverOffset.top
+						});
+						
+						//Update mover bounds to account the new element in them
+						updateMoverBounds(mover);
+					},
+					
+					//Called then element is deselected
+					unselected: function( event, ui ) {
+						//Try to find the mover
+						var mover = $('#mover');
+						
+						//If not found - return
+						if(!mover.length) return;
+
+						//Get the unselected element
+						var el = $(ui.unselected);
+
+						//Removing saved w / h
+						el.css('width', '');
+						el.css('height', '');
+						
+						//Drop it to the page below it
+						moveToParent(el, findParent(el));
+						
+						//Enable draggable functionality
+						el.draggable( "enable" );
+
+						if(mover.find('.draggable').length) {
+							//If mover stil has more draggables inside - update its bounds
+							updateMoverBounds(mover);
+						} else {
+							//If mover is empty - remove it
+							removeMover();
+						}
+					},
+					
+					//We need this to unselect elements if user clicks the empty space on the page
+					stop: function( event, ui ) {
+						//If nothing wes selected - i.e. if this is just a click
+						if(!newSelected) {
+							//Empty and remove mover
+							removeMover();
+							
+							//Besides we hide hover in the same case too
+							if(hover.hasClass('visible')) {
+								hover.removeClass('visible');
+							}
+						}
+						//Clear new selected flag
+						newSelected = false;
+					}
+				});
+			});
+		</script>
+	</head>
+	<body style="cursor: auto;">
+		<div class="builder">
+			<div class="sidebar">
+				<div class="sticky">
+					<div class="draggable ui-draggable ui-draggable-handle">
+						Name
+					</div>
+					<div class="draggable ui-draggable ui-draggable-handle">
+						Title
+					</div>
+					<div class="draggable radio ui-draggable ui-draggable-handle">
+						<input type="radio" name="radio">
+					</div>
+				</div>
+			</div>
+
+			<div class="scroll">
+				<div id="page1" class="droppable ui-droppable ui-selectable">
+					<h2>Page 1</h2>
+				<div class="draggable ui-draggable ui-draggable-handle selectable" style="left: 22%; top: 35%;">
+						Name
+					</div></div>
+				<div id="page2" class="droppable ui-droppable ui-selectable">
+					<h2>Page 2</h2>
+				</div>
+				<div id="page3" class="droppable ui-droppable ui-selectable">
+					<h2>Page 3</h2>
+				</div>
+			</div>
+		</div>
+	
+<div id="hover"><button class="add">+</button></div></body></html>
